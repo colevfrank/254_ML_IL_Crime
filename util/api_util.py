@@ -1,5 +1,5 @@
 import os
-from core.util import basic_io
+from util import basic_io
 
 
 def get_mapbox_app_token():
