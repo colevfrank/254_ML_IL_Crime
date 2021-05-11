@@ -22,7 +22,7 @@ def load_data():
     
     uof_csv = '../data/Use_of_force_CPD.csv'
     df = pd.read_csv(uof_csv)
-
+    #print("DF IS A", type(df))
     return df
 
 
@@ -39,6 +39,8 @@ def clean_data(df):
 
     # Keep only most recent record per card number
     df = df.drop_duplicates(subset = 'TRR_REPORT_ID')
+
+    return df
 
 
 def add_mem_resp_indicators(df):
@@ -66,6 +68,8 @@ def add_mem_resp_indicators(df):
     df['MEMRESP_RWW'] = df['MEMRESP_RWW_CANINE_I']
     for col in RWW_lst:
         df['MEMRESP_RWW'] = np.where(df[col] == 'Y', 'Y', df['MEMRESP_RWW'])
+    
+    return df
 
     
 def add_features_at_beatyear(df):
@@ -84,6 +88,8 @@ def add_features_at_beatyear(df):
     binary_cols.extend(dummy_cols)
     uof_beat_yr = df.groupby(['DISTRICT', 'BEAT', 'YEAR'])[binary_cols].sum().reset_index()
 
+    return uof_beat_yr
+
 
 def go():
 
@@ -95,5 +101,9 @@ def go():
 
     uof_beatyear = add_features_at_beatyear(uof_df)
     
-    
-    uof_beat_yr.to_csv('../data/features/use_of_force.csv')
+    uof_beatyear.to_csv('../data/features/use_of_force.csv')
+    print('Generated features for use of force data')
+
+
+if __name__ == "__main__":
+    go()
