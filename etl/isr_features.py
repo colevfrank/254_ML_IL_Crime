@@ -1,6 +1,7 @@
 # import packages
 import pandas as pd
 import numpy as np
+import os
 
 ISR_CSV1 = '../data/ISR/01-JAN-2016 to 28-FEB-2017 - ISR - JUV Redacted.csv'
 ISR_CSV2 = '../data/ISR/29-FEB-2016 thru 16-JAN-2018 - ISR - JUV Redacted.csv'
@@ -82,15 +83,20 @@ def create_features(isr_df, categ_cols, binary_cols):
 
 
 def go():
-    # load data
+    print('Loading data...')
     isr_raw_df = load_data()
     
-    # clean data
+    print('Cleaning data...')
     isr_df = clean_data(isr_raw_df)
 
-    # get final df
+    print('Creating features...')
     isr_beat_yr = create_features(isr_df, CAT_COLS, BINARY_COLS)
     
+    # make features directory if not present
+    if not os.path.exists('../data/features'):
+        os.mkdir('../data/features')
+
+    print('Saving features...')
     isr_beat_yr.to_csv('../data/features/isr.csv')
     print('Generated features for ISR data')
 
