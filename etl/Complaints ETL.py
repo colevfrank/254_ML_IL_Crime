@@ -127,8 +127,8 @@ comdata_agg = comdata.drop(labels='LOG_NO', axis='columns').groupby(by=['BEAT','
 
 
 # Write to disk
-get_ipython().system('mkdir -p ../data/processed')
-comdata_agg.to_csv("../data/processed/complaints.csv")
+get_ipython().system('mkdir -p ../data/features')
+comdata_agg.to_csv("../data/features/complaints.csv")
 
 
 # # Officers
