@@ -16,7 +16,7 @@ Project Directory:
     /etl 
         Scripts for transforming /data into /data/features
     /eda
-        Scripts for exploring datasets
+        Scripts for informally exploring datasets
     /utils
         Not really used
 

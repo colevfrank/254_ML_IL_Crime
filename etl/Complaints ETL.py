@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[10]:
+# In[1]:
 
 
 import pandas as pd
@@ -11,7 +11,7 @@ import numpy as np
 
 # # Complainants / Subjects
 
-# In[244]:
+# In[77]:
 
 
 # Load "by complaintant" dataset
@@ -19,22 +19,22 @@ comdata = pd.read_csv("../data/raw/Complaints/COPA_Cases_-_By_Complainant_or_Sub
 comdata['LOG_NO'] = comdata['LOG_NO'].astype(str)
 
 
-# In[245]:
+# In[78]:
 
 
-# XXX:  # Commented out because these may be multi-party complaints
+# XXX: Keeping these duplicates: they may be legitimate multi-party complaints
 # Discard literal duplicates
 # comdata.drop_duplicates(inplace = True)
 
 
-# In[246]:
+# In[79]:
 
 
 # Drop all time columns except year, which is needed for aggregation
 comdata.drop(labels=['COMPLAINT_DATE', 'COMPLAINT_HOUR',                      'COMPLAINT_DAY', 'COMPLAINT_MONTH', 'DATETIME'],              axis='columns',             inplace = True)
 
 
-# In[247]:
+# In[80]:
 
 
 # The question of which cases move through the system and how quickly is interesting, 
@@ -42,24 +42,24 @@ comdata.drop(labels=['COMPLAINT_DATE', 'COMPLAINT_HOUR',                      'C
 comdata.drop(labels='CURRENT_STATUS', axis='columns', inplace=True)
 
 
-# In[248]:
+# In[81]:
 
 
 # For similar reasons, let's drop assignment until we read up on who sees which kind of cases
 comdata.drop(labels='ASSIGNMENT', axis='columns', inplace=True)
 
 
-# In[249]:
+# In[82]:
 
 
 # For similar reasons, let's drop case_type until we decide we want to include these procedural details
 comdata.drop(labels='CASE_TYPE', axis='columns', inplace=True)
 
 
-# In[250]:
+# In[83]:
 
 
-# XXX: Commented out because I think the 'duplicated' records actually refer to a party of complaintants
+# XXX: Keeping these duplicates: they may be legitimate multi-party complaints
 
 # Clean up duplicates
 # logcounts = comdata['LOG_NO'].value_counts()
@@ -79,7 +79,14 @@ comdata.drop(labels='CASE_TYPE', axis='columns', inplace=True)
 # comdata[comdata['LOG_NO'] == duplogs[45]]
 
 
-# In[251]:
+# In[84]:
+
+
+# Clean capital/lowercase typo in race category:
+comdata.RACE_OF_COMPLAINANT.replace(to_replace="Hispanic, Latino, or Spanish origin",                                    value="Hispanic, Latino, or Spanish Origin",                                     inplace=True)
+
+
+# In[85]:
 
 
 # Create new indicator columns for the multi-categorical columns
@@ -95,35 +102,58 @@ def listcolumn_pivot_wider(data, column_name, prefix):
     data.drop(labels=column_name, axis='columns', inplace=True)
     return pd.concat([data, dummies], axis=1)
 
-comdata = listcolumn_pivot_wider(comdata, 'CURRENT_CATEGORY', 'COMPLAINT_CAT_')
-comdata = listcolumn_pivot_wider(comdata, 'FINDING_CODE', 'COMPLAINT_FINDING_')
+
+# For simplicity, we are reducing our feature-set to counts by race: don't create the other categorical features
 comdata = listcolumn_pivot_wider(comdata, 'RACE_OF_COMPLAINANT', 'COMPLAINANT_RACE_')
-comdata = listcolumn_pivot_wider(comdata, 'SEX_OF_COMPLAINANT', 'COMPLAINANT_SEX_')
-comdata = listcolumn_pivot_wider(comdata, 'AGE_OF_COMPLAINANT', 'COMPLAINANT_AGE_')
+# comdata = listcolumn_pivot_wider(comdata, 'CURRENT_CATEGORY', 'COMPLAINT_CAT_')
+# comdata = listcolumn_pivot_wider(comdata, 'FINDING_CODE', 'COMPLAINT_FINDING_')
+# comdata = listcolumn_pivot_wider(comdata, 'SEX_OF_COMPLAINANT', 'COMPLAINANT_SEX_')
+# comdata = listcolumn_pivot_wider(comdata, 'AGE_OF_COMPLAINANT', 'COMPLAINANT_AGE_')
 
 
-# In[252]:
+# In[86]:
+
+
+# For simplicity, we are reducing our feature-set to counts by race: drop the other categorical feature columns
+comdata.drop(labels=['CURRENT_CATEGORY','FINDING_CODE','SEX_OF_COMPLAINANT','AGE_OF_COMPLAINANT'],              axis='columns', inplace=True)
+
+
+# In[87]:
+
+
+# For simplicity, we are limiting race to white/black/latino-other
+race_columns = comdata.columns.str.contains('COMPLAINANT_RACE')
+white_columns = comdata.columns.str.contains('White')
+black_columns = comdata.columns.str.contains('Black')
+latino_columns = comdata.columns.str.contains('Latino')
+other_columns = np.logical_and(race_columns, np.logical_not(                                             np.logical_or(latino_columns,                                              np.logical_or(white_columns, black_columns))))
+other_columns = comdata.columns[other_columns]
+comdata = comdata.assign(COMPLAINANT_RACE_Other = sum([comdata[c] for c in other_columns]))
+comdata.drop(labels=other_columns, axis='columns', inplace=True)
+
+
+# In[88]:
 
 
 # Pivot "beats" column longer: create more rows when complaint spans beats
 comdata = comdata.assign(BEAT = comdata['BEAT'].str.replace("\s*", "", regex=True))                  .assign(BEAT = comdata['BEAT'].str.split("|"))                  .explode('BEAT')
 
 
-# In[253]:
+# In[89]:
 
 
 # Transform Police Shooting to numeric
 comdata = comdata.assign(POLICE_SHOOTING = lambda x: x.POLICE_SHOOTING.map({'No':0.0, 'Yes':1.0}))
 
 
-# In[254]:
+# In[91]:
 
 
 # Aggregate
 comdata_agg = comdata.drop(labels='LOG_NO', axis='columns').groupby(by=['BEAT','COMPLAINT_YEAR']).sum()
 
 
-# In[255]:
+# In[92]:
 
 
 # Write to disk
