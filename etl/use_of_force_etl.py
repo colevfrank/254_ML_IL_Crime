@@ -88,20 +88,32 @@ def add_features_at_beatyear(df):
     binary_cols.extend(dummy_cols)
     uof_beat_yr = df.groupby(['DISTRICT', 'BEAT', 'YEAR'])[binary_cols].sum().reset_index()
 
+
+    # Finalize limited set of features
+    uof_beat_yr['HISPANIC'] = uof_beat_yr['SUBJECT_RACE_BLACK HISPANIC'] + (
+                              uof_beat_yr['SUBJECT_RACE_WHITE HISPANIC'])
+    uof_beat_yr['BLACK'] = uof_beat_yr['SUBJECT_RACE_AFRICAN-AMERICAN']
+    uof_beat_yr['WHITE'] = uof_beat_yr['SUBJECT_RACE_WHITE']
+
+    final_cols = ['DISTRICT', 'BEAT', 'YEAR', 'TOTAL_COUNT', 'HISPANIC', 'BLACK', 'WHITE']
+    uof_beat_yr = uof_beat_yr[final_cols]
+
     return uof_beat_yr
 
 
 def go():
 
+    print('Loading data...')
     uof_df_raw = load_data()
 
+    print('Cleaning data...')
     uof_df_clean = clean_data(uof_df_raw)
-
     uof_df = add_mem_resp_indicators(uof_df_clean)
-
+    
+    print('Creating features...')
     uof_beatyear = add_features_at_beatyear(uof_df)
     
-    uof_beatyear.to_csv('../data/features/use_of_force.csv')
+    uof_beatyear.to_csv('../data/features/use_of_force.csv', index=False)
     print('Generated features for use of force data')
 
 
