@@ -21,6 +21,7 @@ BINARY_COLS = ['TOTAL_COUNT',
 
 def load_data():
     '''
+    load and concatenate data from csvs to single df
     '''
 # set filepaths (3 files)
     csv_list = [ISR_CSV1, ISR_CSV2, ISR_CSV3]
@@ -34,6 +35,7 @@ def load_data():
 
 def clean_data(isr_raw_df):
     '''
+    cleans df to remove duplicate records.
     '''
     # Remove redacted juvenile records
     isr_df = isr_raw_df[isr_raw_df['CONTACT_DATE']!='REDACTED']
@@ -58,6 +60,10 @@ def clean_data(isr_raw_df):
 
 
 def create_features(isr_df, categ_cols, binary_cols):
+    '''
+    create final feature set, dropping nonessential variables and aggregating
+    at police beat/year level.
+    '''
 
     dummy_cols = pd.get_dummies(isr_df[categ_cols], 
                                 columns = categ_cols, 
@@ -79,10 +85,35 @@ def create_features(isr_df, categ_cols, binary_cols):
     isr_beat_yr = isr_df.groupby(['DISTRICT', 'SECTOR', 'BEAT', 'YEAR']
                                 )[binary_cols].sum().reset_index()
 
+    # finalize dataset for export
+
+    # Add hispanic indicator
+    isr_beat_yr['CNT_HISPANIC'] = isr_beat_yr['RACE_CODE_CD_WBH'] + isr_beat_yr['RACE_CODE_CD_WWH']
+
+    isr_beat_yr = isr_beat_yr[['DISTRICT', 
+                               'SECTOR',
+                               'BEAT',
+                               'YEAR',
+                               'TOTAL_COUNT',
+                               'RACE_CODE_CD_BLK',
+                               'RACE_CODE_CD_WHI',
+                               'CNT_HISPANIC']]
+
+    isr_beat_yr.columns = [['DISTRICT', 
+                            'SECTOR',
+                            'BEAT',
+                            'YEAR',
+                            'CNT_ISR_TOTAL',
+                            'CNT_ISR_BLACK',
+                            'CNT_ISR_WHITE',
+                            'CNT_ISR_HISPANIC']]
     return isr_beat_yr
 
 
 def go():
+    '''
+    Main function that runs all steps.
+    '''
     print('Loading data...')
     isr_raw_df = load_data()
     
@@ -97,7 +128,7 @@ def go():
         os.mkdir('../data/features')
 
     print('Saving features...')
-    isr_beat_yr.to_csv('../data/features/isr.csv')
+    isr_beat_yr.to_csv('../data/features/isr.csv', index=False)
     print('Generated features for ISR data')
 
 if __name__ == "__main__":
