@@ -18,5 +18,5 @@ Project Directory:
     /eda
         Scripts for informally exploring datasets
     /utils
-        Not really used
-
+        Tools for reshaping data
+    
