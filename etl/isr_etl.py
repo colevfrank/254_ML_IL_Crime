@@ -82,26 +82,23 @@ def create_features(isr_df, categ_cols, binary_cols):
     # combine into one list
     binary_cols.extend(dummy_cols)
 
-    isr_beat_yr = isr_df.groupby(['DISTRICT', 'SECTOR', 'BEAT', 'YEAR']
-                                )[binary_cols].sum().reset_index()
+    isr_df['BEAT']= pd.to_numeric(isr_df['BEAT'])
+
+    isr_beat_yr = isr_df.groupby(['BEAT', 'YEAR'])[binary_cols].sum().reset_index()
 
     # finalize dataset for export
 
     # Add hispanic indicator
     isr_beat_yr['CNT_HISPANIC'] = isr_beat_yr['RACE_CODE_CD_WBH'] + isr_beat_yr['RACE_CODE_CD_WWH']
 
-    isr_beat_yr = isr_beat_yr[['DISTRICT', 
-                               'SECTOR',
-                               'BEAT',
+    isr_beat_yr = isr_beat_yr[['BEAT',
                                'YEAR',
                                'TOTAL_COUNT',
                                'RACE_CODE_CD_BLK',
                                'RACE_CODE_CD_WHI',
                                'CNT_HISPANIC']]
 
-    isr_beat_yr.columns = [['DISTRICT', 
-                            'SECTOR',
-                            'BEAT',
+    isr_beat_yr.columns = [['BEAT',
                             'YEAR',
                             'CNT_ISR_TOTAL',
                             'CNT_ISR_BLACK',
