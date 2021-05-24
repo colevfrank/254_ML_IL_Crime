@@ -8,6 +8,7 @@ __pycache__/
 
 # Visual studio environment setup
 *.code-workspace
+.vscode
 
 # C extensions
 *.so
