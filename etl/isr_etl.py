@@ -91,19 +91,19 @@ def create_features(isr_df, categ_cols, binary_cols):
     # Add hispanic indicator
     isr_beat_yr['CNT_HISPANIC'] = isr_beat_yr['RACE_CODE_CD_WBH'] + isr_beat_yr['RACE_CODE_CD_WWH']
 
-    isr_beat_yr = isr_beat_yr[['BEAT',
-                               'YEAR',
-                               'TOTAL_COUNT',
-                               'RACE_CODE_CD_BLK',
-                               'RACE_CODE_CD_WHI',
-                               'CNT_HISPANIC']]
+    # isr_beat_yr = isr_beat_yr[['BEAT',
+    #                            'YEAR',
+    #                            'TOTAL_COUNT',
+    #                            'RACE_CODE_CD_BLK',
+    #                            'RACE_CODE_CD_WHI',
+    #                            'CNT_HISPANIC']]
 
-    isr_beat_yr.columns = [['BEAT',
-                            'YEAR',
-                            'CNT_ISR_TOTAL',
-                            'CNT_ISR_BLACK',
-                            'CNT_ISR_WHITE',
-                            'CNT_ISR_HISPANIC']]
+    # isr_beat_yr.columns = [['BEAT',
+    #                         'YEAR',
+    #                         'CNT_ISR_TOTAL',
+    #                         'CNT_ISR_BLACK',
+    #                         'CNT_ISR_WHITE',
+    #                         'CNT_ISR_HISPANIC']]
     return isr_beat_yr
 
 
