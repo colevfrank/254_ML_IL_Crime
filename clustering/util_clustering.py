@@ -48,7 +48,7 @@ def grid_search_clustering(model, param_grid, data, metric=None):
         # Save results
         results = results.append({ \
                         "Model": model_name, \
-                        "Params":str(params), \
+                        "Params":params, \
                         "Score": score, \
                         "Halinski-Harabasz": vr_score, \
                         "Davies-Bouldin": db_score, \
