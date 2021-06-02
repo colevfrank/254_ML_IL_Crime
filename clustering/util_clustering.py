@@ -14,7 +14,7 @@ def grid_search_clustering(model, param_grid, data, metric=None):
         metric - Estimator-specific metric name to report, e.g. 'inertia_'
         data - pandas data frame or ndarray to cluster
     """
-    results = pd.DataFrame(columns=["Model","Params","Score","Halinski-Harabasz","Davies-Bouldin","Silhouette","Time","NLabels","Labels"])
+    results = pd.DataFrame(columns=["Model","Params","Score","Calinski-Harabasz","Davies-Bouldin","Silhouette","Time","NLabels","Labels"])
     for params in param_grid: 
         # Train the clustering model
         model_name = type(model).__name__
@@ -26,7 +26,11 @@ def grid_search_clustering(model, param_grid, data, metric=None):
         print("Training Time Elapsed:", stop - start)
         # Compute user-specified score of the clustering quality
         if type(metric) == str:
-            score = getattr(model, metric)
+            if metric == 'bic':
+                # Hack for GMM
+                score = model.bic(data)
+            else:
+                score = getattr(model, metric)
         else:
             score = np.nan
         # Compute common cluster quality scores
@@ -50,7 +54,7 @@ def grid_search_clustering(model, param_grid, data, metric=None):
                         "Model": model_name, \
                         "Params":params, \
                         "Score": score, \
-                        "Halinski-Harabasz": vr_score, \
+                        "Calinski-Harabasz": vr_score, \
                         "Davies-Bouldin": db_score, \
                         "Silhouette": sil_score, \
                         "Time": stop-start, \
