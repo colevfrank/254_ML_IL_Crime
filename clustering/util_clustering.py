@@ -2,6 +2,23 @@ import datetime
 import pandas as pd
 import numpy as np
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
+from sklearn.decomposition import PCA
+
+def generate_pca_data(dataset, n_components=None):
+    """
+        Fit and transform dataset into principal component space.
+    Params:
+        dataset - data frame of observations
+        n_components - number of top primary components to keep. if None, keep all.
+    Returns:
+        tuple of (transformed data frame, pca instance)
+    """
+    if n_components is None:
+        n_components = dataset.shape[1]
+    pca = PCA(n_components=n_components)
+    pc_dataset = pd.DataFrame(pca.fit_transform(dataset))
+    pc_dataset.columns = ['PC'+str(i+1) for i in range(n_components)]
+    return pc_dataset, pca
 
 def grid_search_clustering(model, param_grid, data, metric=None):
     """ 
