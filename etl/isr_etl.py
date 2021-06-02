@@ -12,12 +12,12 @@ CAT_COLS = ['RACE_CODE_CD',
             'CONTACT_TYPE_CD']
 # enter binary cols to use - any others?
 BINARY_COLS = ['TOTAL_COUNT', 
-            'VEHICLE_INVOLVED_I', 
-            'BODY_CAMERA_I', 
-            'SEARCH_I', 
-            'SEARCH_CONTRABAND_FOUND_I', 
-            'PAT_DOWN_I', 
-            'ENFORCEMENT_ACTION_TAKEN_I']
+               'VEHICLE_INVOLVED_I', 
+               'BODY_CAMERA_I', 
+               'SEARCH_I', 
+               'SEARCH_CONTRABAND_FOUND_I', 
+               'PAT_DOWN_I', 
+               'ENFORCEMENT_ACTION_TAKEN_I']
 
 def load_data():
     '''
@@ -53,8 +53,9 @@ def clean_data(isr_raw_df):
     # Keep only most recent record per card number
     isr_df = isr_df.drop_duplicates(subset = 'CARD_NO')
 
-    # Add year as variable
+    # Add year as variable and convert beat to numeric
     isr_df['YEAR'] = isr_df['DATETIME'].dt.year
+    isr_df['BEAT']= pd.to_numeric(isr_df['BEAT'])
 
     return isr_df
 
@@ -72,39 +73,42 @@ def create_features(isr_df, categ_cols, binary_cols):
                             columns = categ_cols, 
                             prefix = categ_cols)
 
-    isr_df['TOTAL_COUNT'] = 1
+    # Label as Y to convert to 1 later
+    isr_df['TOTAL_COUNT'] = 'Y'
 
     # convert from y/n to 1/0
     for col in binary_cols:
-        isr_df[col] = np.where(isr_df[col]=='Y',1,isr_df[col])
-        isr_df[col] = np.where(isr_df[col]=='N',0,isr_df[col]) 
+        isr_df[col] = np.where(isr_df[col]=='Y', 1, 0)
 
-    # combine into one list
+    # combine all columns into one list
     binary_cols.extend(dummy_cols)
+    binary_cols.extend(['BEAT', 'YEAR'])
 
-    isr_df['BEAT']= pd.to_numeric(isr_df['BEAT'])
-
-    isr_beat_yr = isr_df.groupby(['BEAT', 'YEAR'])[binary_cols].sum().reset_index()
-
-    # finalize dataset for export
+    isr_beat_yr = isr_df[binary_cols].groupby(['BEAT', 'YEAR']).sum().reset_index()
+    
+    # Finalize features for export
 
     # Add hispanic indicator
     isr_beat_yr['CNT_HISPANIC'] = isr_beat_yr['RACE_CODE_CD_WBH'] + isr_beat_yr['RACE_CODE_CD_WWH']
 
-    isr_beat_yr = isr_beat_yr[['BEAT',
-                               'YEAR',
-                               'TOTAL_COUNT',
-                               'RACE_CODE_CD_BLK',
-                               'RACE_CODE_CD_WHI',
-                               'CNT_HISPANIC']]
+    isr_beat_yr_export = isr_beat_yr[['BEAT',
+                                      'YEAR',
+                                      'TOTAL_COUNT',
+                                      'SEARCH_I',
+                                      'RACE_CODE_CD_BLK',
+                                      'RACE_CODE_CD_WHT',
+                                      'CNT_HISPANIC',
+                                      'ENFORCEMENT_TYPE_CD_ARR']]
 
-    isr_beat_yr.columns = [['BEAT',
-                            'YEAR',
-                            'CNT_ISR_TOTAL',
-                            'CNT_ISR_BLACK',
-                            'CNT_ISR_WHITE',
-                            'CNT_ISR_HISPANIC']]
-    return isr_beat_yr
+    isr_beat_yr_export.columns =['BEAT',
+                                 'YEAR',
+                                 'TOTAL_STOPS',
+                                 'SEARCH',
+                                 'BLACK',
+                                 'WHITE',
+                                 'HISPANIC',
+                                 'ARREST']
+    return isr_beat_yr_export
 
 
 def go():
