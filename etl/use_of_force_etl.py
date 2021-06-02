@@ -6,16 +6,8 @@ import seaborn as sns
 categ_cols = ['SUBJECT_RACE', 'SUBJECT_GENDER', 'SUBJECT_ARMED_DESC']
 
 binary_cols = ['TOTAL_COUNT', 
-               'MEMRESP_FIREARM_I',
-               'MEMRESP_FM',
-               'MEMRESP_CT',
                'MEMRESP_RWOW',
-               'MEMRESP_RWW',
-               'MEMRESP_IMPACT_WEAP_I',
-               'SUBAC_DEADLY_FORCE_I', 
-               'SUBJECT_ARMED_I',
-               'SUBAC_ATTACK_NW_I',
-               'SUBAC_ATTACK_WW_I']
+               'MEMRESP_RWW']
 
 
 def load_data():
@@ -74,28 +66,34 @@ def add_mem_resp_indicators(df):
     
 def add_features_at_beatyear(df):
     '''
+    Aggregate features at the beat/year level
     '''
     #add dummies
     dummy_cols = pd.get_dummies(df[categ_cols], columns = categ_cols, prefix = categ_cols).columns
     df = pd.get_dummies(df, columns = categ_cols, prefix = categ_cols)
 
-    df['TOTAL_COUNT'] = 1
+    # Convert to string to then be converted below
+    df['TOTAL_COUNT'] = 'Y'
 
     for col in binary_cols:
-        df[col] = np.where(df[col]=='Y',1,df[col])
-        df[col] = np.where(df[col]=='N',0,df[col])
+        df[col] = np.where(df[col]=='Y',1,0)
 
+    # add list of features to include
     binary_cols.extend(dummy_cols)
-    uof_beat_yr = df.groupby(['DISTRICT', 'BEAT', 'YEAR'])[binary_cols].sum().reset_index()
+    binary_cols.extend(['BEAT', 'YEAR'])
 
+    uof_beat_yr = df[binary_cols].groupby(['BEAT', 'YEAR']).sum().reset_index()
 
-    # Finalize limited set of features
+    # Finalize limited set of features and rename
     uof_beat_yr['HISPANIC'] = uof_beat_yr['SUBJECT_RACE_BLACK HISPANIC'] + (
                               uof_beat_yr['SUBJECT_RACE_WHITE HISPANIC'])
     uof_beat_yr['BLACK'] = uof_beat_yr['SUBJECT_RACE_AFRICAN-AMERICAN']
     uof_beat_yr['WHITE'] = uof_beat_yr['SUBJECT_RACE_WHITE']
+    uof_beat_yr['POLICE_W_WEAPON'] = uof_beat_yr['MEMRESP_RWW']
+    uof_beat_yr['POLICE_WO_WEAPON'] = uof_beat_yr['MEMRESP_RWOW']
 
-    final_cols = ['DISTRICT', 'BEAT', 'YEAR', 'TOTAL_COUNT', 'HISPANIC', 'BLACK', 'WHITE']
+    final_cols = ['BEAT', 'YEAR', 'TOTAL_COUNT', 'POLICE_W_WEAPON', 
+                  'POLICE_WO_WEAPON','HISPANIC', 'BLACK', 'WHITE']
     uof_beat_yr = uof_beat_yr[final_cols]
 
     return uof_beat_yr
@@ -109,10 +107,10 @@ def go():
     print('Cleaning data...')
     uof_df_clean = clean_data(uof_df_raw)
     uof_df = add_mem_resp_indicators(uof_df_clean)
-    
+
     print('Creating features...')
     uof_beatyear = add_features_at_beatyear(uof_df)
-    
+
     uof_beatyear.to_csv('../data/features/use_of_force.csv', index=False)
     print('Generated features for use of force data')
 
