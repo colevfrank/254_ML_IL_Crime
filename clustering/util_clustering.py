@@ -25,8 +25,7 @@ def setup_and_run_model(cluster_model, pca_training_data, beats):
     '''
     # run model
     cluster_labels = cluster_model.fit_predict(pca_training_data)
-    clustered_data = pd.concat([pca_training_data, pd.Series(cluster_labels, name='Cluster')], axis=1)
-    clustered_data.set_index(beats)
+    clustered_data = pd.concat([pca_training_data, pd.Series(cluster_labels, name='Cluster'),beats], axis=1)
     return cluster_labels, clustered_data
 
 def get_clusters(training_data, beats, cluster_model):
