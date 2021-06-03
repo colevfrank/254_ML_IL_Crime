@@ -3,7 +3,40 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
+def pre_process(training_data):
+    '''
+    Prepare raw training data for clustering; do PCA.
+    '''
+    # Normalize columns
+    scaler = StandardScaler()
+    scaled_training_data = pd.DataFrame(scaler.fit_transform(training_data),\
+        columns=training_data.columns)
+    
+    # Do PCA
+    N_TOP_PCA_COMPONENTS = 6 # See Model Selection.ipynb for why we chose this number.
+    pca_training_data, pca = generate_pca_data(scaled_training_data, N_TOP_PCA_COMPONENTS)
+    return pca_training_data
+
+def setup_and_run_model(cluster_model, pca_training_data, beats):    
+    '''
+    Using model passed in, fit to training data and return labels.
+    '''
+    # run model
+    cluster_labels = cluster_model.fit_predict(pca_training_data)
+    clustered_data = pd.concat([pca_training_data, pd.Series(cluster_labels, name='Cluster')], axis=1)
+    clustered_data.set_index(beats)
+    return cluster_labels, clustered_data
+
+def get_clusters(training_data, beats, cluster_model):
+    '''
+    Pre-process and run model based on training data
+    '''
+    pca_training_data = pre_process(training_data)
+    cluster_labels, clustered_data = setup_and_run_model(cluster_model, pca_training_data, beats)
+    return cluster_labels, clustered_data    
+    
 def generate_pca_data(dataset, n_components=None):
     """
         Fit and transform dataset into principal component space.
