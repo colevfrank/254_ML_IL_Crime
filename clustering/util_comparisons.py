@@ -2,21 +2,26 @@ import pandas as pd
 import numpy as np
 from util_clustering import get_clusters
 
-def create_training_data_race(data, remove_cols, race):
+def create_training_data_race(data, keep_cols, demog):
     '''
     Subset training data to include 9 features: ISR, UOF, Complaints for each of 3 races
     '''
     # Create training data
     training_data = data.copy()
+
+    # keep demographic columns
+    demo_cols = [c for c in training_data.columns if demog in c]
+    keep_cols_copy = keep_cols + demo_cols + ['BEAT']
     
     # filter columns
-    training_data = training_data[['BEAT', 'YEAR', 'ISR_BLACK', 'ISR_WHITE', 'ISR_HISPANIC',
-                                   'UOF_BLACK', 'UOF_WHITE', 'UOF_HISPANIC',
-                                 'COMPLAINTS_BLACK', 'COMPLAINTS_WHITE', 'COMPLAINTS_HISPANIC']]
-        
+    remove_cols = [c for c in training_data.columns if c not in keep_cols_copy]
+    training_data.drop(remove_cols, axis=1, inplace=True)
+    
     # Sum by year
-    training_data = training_data.drop('YEAR',axis=1).groupby(by='BEAT').agg(np.sum)
-    return training_data
+    training_data = training_data.groupby(by='BEAT').agg(np.sum).reset_index()
+    beats = training_data['BEAT']
+    training_data.drop('BEAT', axis=1, inplace=True)
+    return training_data, beats
 
 def create_training_data_year(data, remove_cols, year):
     '''
@@ -36,7 +41,7 @@ def create_training_data_year(data, remove_cols, year):
 
     # drop beat feature
     beats = training_data['BEAT']
-    training_data.drop('BEAT', axis=1)
+    training_data.drop('BEAT', axis=1, inplace=True)
     return training_data, beats
     
 def get_match_mat(labels):
@@ -82,28 +87,26 @@ def compute_cluster_sim_score(labels1, labels2):
     mat2 = get_match_mat(labels2)
     return get_cosine_match(mat1, mat2, n)
 
-def compute_similarity_matrix(data, comp_values, remove_cols, model):
+def compute_similarity_matrix(data, comp_values, filter_cols, training_func, model):
     """
         Runs clustering over subsets of data and measures similarity.
     Params:
         data - data frame of features
         comp_values - distinct values for subsetting
-        remove_cols - columns to remove
+        filter_cols - columns to filter on (remove for yearly, keep for race)
+        training_func - function to create training data
         model - clustering model
     Returns:
         nxn matrix similarity scores as data frame
     """
-    result_df = pd.DataFrame()
+    long_df = pd.DataFrame()
     for value_1 in comp_values:
-        training_data_1, beats_1 = create_training_data_year(data, remove_cols, value_1)
+        training_data_1, beats_1 = training_func(data, filter_cols, value_1)
         _, clustered_data_1 = get_clusters(training_data_1, beats_1, model) # We are subsetting the labels later
         
-        # initialize way to store row data
-        row_dict = {}
-
         for value_2 in comp_values:
             # Get clusters
-            training_data_2, beats_2 = create_training_data_year(data, remove_cols, value_2)
+            training_data_2, beats_2 = training_func(data, filter_cols, value_2)
             _, clustered_data_2 = get_clusters(training_data_2, beats_2, model)
 
             # Exclude beats that Merge on beat and extract new cluster labels only for those that match
@@ -113,6 +116,7 @@ def compute_similarity_matrix(data, comp_values, remove_cols, model):
 
             # Compare
             sim_score = compute_cluster_sim_score(cluster_labels_1, cluster_labels_2)
-            row_dict[value_2] = sim_score
-        result_df = result_df.append(row_dict, ignore_index=True)
-    return result_df
+            
+            long_df = long_df.append({'row':value_1, 'col':value_2, 'sim':sim_score}, ignore_index=True)
+    wide_df = long_df.pivot(index='row',columns='col',values='sim')
+    return wide_df.sort_index(axis=0).sort_index(axis=1)

@@ -48,6 +48,8 @@ def generate_pca_data(dataset, n_components=None):
     """
     if n_components is None:
         n_components = dataset.shape[1]
+    elif n_components > dataset.shape[1]:
+        n_components = dataset.shape[1]
     pca = PCA(n_components=n_components)
     pc_dataset = pd.DataFrame(pca.fit_transform(dataset))
     pc_dataset.columns = ['PC'+str(i+1) for i in range(n_components)]
